@@ -1,17 +1,6 @@
 import yfinance as yf
 import pandas as pd
 
-# Expense ratios (Yahoo does not provide these for ETFs)
-expense_ratios = {
-    "VOO": 0.03,
-    "VTI": 0.03,
-    "VGT": 0.10,
-    "SPYG": 0.04,
-    "QQQM": 0.15,
-    "SCHD": 0.06,
-    "SCHG": 0.04
-}
-
 # Path to Excel file
 file_path = "holdings.xlsx"
 
@@ -33,9 +22,19 @@ df_holdings = df_holdings.dropna(subset=["Ticker", "Number of stocks"])
 df_holdings["Ticker"] = df_holdings["Ticker"].astype(str)
 df_holdings["Number of stocks"] = df_holdings["Number of stocks"].astype(float)
 
+# Expense ratios (Yahoo does not provide these for ETFs)
+expense_ratios = {
+    "VOO": 0.03,
+    "VTI": 0.03,
+    "VGT": 0.10,
+    "SPYG": 0.04,
+    "QQQM": 0.15,
+    "SCHD": 0.06,
+    "SCHG": 0.04
+}
 
+# Import stocks and ETF prices
 def get_price(stock):
-    """Fix: Use fast_info for ETFs & stocks"""
     try:
         price = stock.fast_info.get("last_price")
         if price is not None:
@@ -53,7 +52,7 @@ def get_price(stock):
 
     return None
 
-
+# Fetch prices from Yahoo Finance
 def fetch_data(ticker):
     stock = yf.Ticker(ticker)
     price = get_price(stock)
