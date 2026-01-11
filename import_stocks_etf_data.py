@@ -221,10 +221,6 @@ def calculate_eps_cagr_3y(ticker):
 df["eps_CAGR_3y"] = df["Ticker"].apply(calculate_eps_cagr_3y)
 
 
-import yfinance as yf
-
-import yfinance as yf
-
 def calculate_fcf_cagr_3y(ticker):
     """
     Calculates 3-year Free Cash Flow CAGR using Yahoo Finance data.
