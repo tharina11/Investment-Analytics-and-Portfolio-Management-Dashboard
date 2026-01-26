@@ -19,6 +19,31 @@ All portfolio values, holdings, and figures shown in this project are sample or 
 
 https://public.tableau.com/app/profile/tharindu.abeysinghe/viz/InvestmentPortfolioMonitoringDashboard/OverallSummary
 
+
+## Key Insights & Why They Matter
+
+[![Summary Page](images/summary.png)]
+
+1. Efficient filtering to narrow the investable universe
+
+Interactive filters allow rapid narrowing of stocks based on type, sector, and key financial characteristics. This mirrors real-world analyst workflows, where screening is used to focus attention on the most relevant opportunities and diversification rather than reviewing every asset individually.
+
+2. Supports “what to buy next” decisions
+
+Because the dashboard does not rely on time-series performance, it emphasizes current fundamentals and valuation alignment. This makes it especially useful for forward-looking allocation decisions rather than retrospective performance tracking.
+
+[![Stock filter](images/stock_filter.png)]
+
+3. Valuation context, not just valuation numbers
+
+The dashboard places each stock’s current P/E ratio alongside a fair P/E range, helping distinguish between expensive, fairly valued, and potentially undervalued securities. This matters because absolute valuation metrics alone lack context—relative positioning improves comparability across companies and sectors.
+
+4. Fundamental strength surfaced at the decision point
+
+Earnings growth, cash flow indicators, and profitability metrics are presented alongside valuation, enabling a quick assessment of whether a company’s fundamentals support its current price. This reduces the risk of selecting stocks based solely on price-based signals.
+
+
+
 ## Tech Stack
 
 - **Python**: Data ingestion, cleaning, and analysis (pandas, yfinance, custom financial metric functions)
