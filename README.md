@@ -22,7 +22,7 @@ https://public.tableau.com/app/profile/tharindu.abeysinghe/viz/InvestmentPortfol
 
 ## Key Insights & Why They Matter
 
-[![Summary Page](images/summary.png)]
+![Summary Page](images/summary.png)
 
 1. Efficient filtering to narrow the investable universe
 
@@ -32,7 +32,7 @@ Interactive filters allow rapid narrowing of stocks based on type, sector, and k
 
 Because the dashboard does not rely on time-series performance, it emphasizes current fundamentals and valuation alignment. This makes it especially useful for forward-looking allocation decisions rather than retrospective performance tracking.
 
-[![Stock filter](images/stock_filter.png)]
+![Stock filter](images/stock_filter.png)
 
 3. Valuation context, not just valuation numbers
 
