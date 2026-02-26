@@ -75,7 +75,7 @@ def get_sector(symbol):
         return 'N/A'
 
 # Apply to the DataFrame
-merged_df['Sector'] = merged_df['Symbol'].apply(get_sector)
+merged_df['Company_Sector'] = merged_df['Symbol'].apply(get_sector)
 
  # Save to Excel
 merged_df.to_excel("etf_top_holdings.xlsx", index=False)
