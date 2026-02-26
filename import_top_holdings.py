@@ -65,6 +65,18 @@ merged_df['holding_value'] = merged_df['holding_value'].round(2)
 # Remove redundant column
 merged_df = merged_df.drop(columns=['Ticker', 'Market value'])
 
+# Function to fetch sector for a single symbol
+def get_sector(symbol):
+    try:
+        ticker = yf.Ticker(symbol)
+        # Access the 'sector' key from the info dictionary
+        return ticker.info.get('sector', 'N/A')
+    except Exception:
+        return 'N/A'
+
+# Apply to the DataFrame
+merged_df['Sector'] = merged_df['Symbol'].apply(get_sector)
+
  # Save to Excel
 merged_df.to_excel("etf_top_holdings.xlsx", index=False)
 print("Saved to top_holdings_df.xlsx")
