@@ -48,6 +48,23 @@ if not top_holdings_df.empty:
 top_holdings_df = top_holdings_df.rename(columns={"Name": "Company Name"})
 top_holdings_df = top_holdings_df[["ETF", "Symbol", "Company Name", "Holding Percent"]]
 
-# Save to Excel
-top_holdings_df.to_excel("etf_top_holdings.xlsx", index=False)
+# Path to Excel file
+file_path = "stock_fundamentals.xlsx"
+
+# Read stock fundamentals table from Excel file 
+stock_fundamentals_df = pd.read_excel(file_path)
+fundamentals_sub_df = stock_fundamentals_df[['Ticker', 'Market value']]
+
+# merge two tables
+merged_df = top_holdings_df.merge(fundamentals_sub_df, left_on='ETF', right_on='Ticker', how='left')
+
+# Calculate holding market value
+merged_df['holding_value'] = merged_df['Market value'] * merged_df['Holding Percent']
+merged_df['holding_value'] = merged_df['holding_value'].round(2)
+
+# Remove redundant column
+merged_df = merged_df.drop(columns=['Ticker', 'Market value'])
+
+ # Save to Excel
+merged_df.to_excel("etf_top_holdings.xlsx", index=False)
 print("Saved to top_holdings_df.xlsx")
