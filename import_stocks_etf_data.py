@@ -1,7 +1,7 @@
 import yfinance as yf
 import pandas as pd
 
-# Path to Excel file
+# Path to holdings excel file
 file_path = "holdings.xlsx"
 
 # Read Excel
@@ -10,17 +10,21 @@ df_holdings = pd.read_excel(file_path)
 # Create ticker list
 tickers = df_holdings["Ticker"].tolist()
 
-# Create dictionary: {Ticker: Number of stocks}
+# Create dictionary: {Ticker: Total stocks}
 number_of_stocks = dict(
-    zip(df_holdings["Ticker"], df_holdings["Number of stocks"])
+    zip(df_holdings["Ticker"], df_holdings["Total stocks"])
+)
+total_cost = dict(
+    zip(df_holdings["Ticker"], df_holdings["Total cost"])
 )
 
 # Drop rows with missing values
-df_holdings = df_holdings.dropna(subset=["Ticker", "Number of stocks"])
+df_holdings = df_holdings.dropna(subset=["Ticker", "Total stocks"])
 
 # Ensure correct types
 df_holdings["Ticker"] = df_holdings["Ticker"].astype(str)
-df_holdings["Number of stocks"] = df_holdings["Number of stocks"].astype(float)
+df_holdings["Total stocks"] = df_holdings["Total stocks"].astype(float)
+df_holdings["Total cost"] = df_holdings["Total cost"].astype(float)
 
 # Expense ratios (Yahoo does not provide these for ETFs)
 expense_ratios = {
@@ -67,16 +71,16 @@ def fetch_data(ticker):
         "Beta": info.get("beta"),
         "Expense Ratio": expense_ratios.get(ticker, None),
         
-        # NEW COLUMN:
-        "Number of Stocks": number_of_stocks.get(ticker, 0)
+        # New columns:
+        "Total stocks": number_of_stocks.get(ticker, 0),
+        "Total cost": total_cost.get(ticker, 0)
     }
-
 
 records = [fetch_data(t) for t in tickers]
 df = pd.DataFrame(records)
 
 # Automatically calculate Market Value
-df["Market value"] = df["Price"] * df["Number of Stocks"]
+df["Market value"] = df["Price"] * df["Total stocks"]
 
 # Add empty columns for manual input
 df["Growth Class"] = None
@@ -102,7 +106,6 @@ growth_class_dict = {
     "UNH": "Defensive",
     "GOOGL": "Aggresive Growth",
     "PLTR": "Aggresive Growth",
-    "F": "Defensive",
     "ET": "Defensive",
     "TSM": "Aggresive Growth",
     "ASML": "Aggresive Growth",
@@ -127,7 +130,6 @@ type_dict = {
     "UNH": "Stock",
     "GOOGL": "Stock",
     "PLTR": "Stock",
-    "F": "Stock",
     "ET": "Stock",
     "TSM": "Stock",
     "ASML": "Stock",
@@ -141,8 +143,7 @@ pe_low_dict = {
     "AVGO": 24, 
     "KO": 21, 
     "UNH": 18,
-    "GOOGL": 22, 
-    "F": 7, 
+    "GOOGL": 22,
     "TSM": 15, 
     "ASML": 30, 
     "META": 20,
@@ -156,7 +157,6 @@ pe_high_dict = {
     "KO": 25, 
     "UNH": 22,
     "GOOGL": 28, 
-    "F": 10, 
     "TSM": 20, 
     "ASML": 40, 
     "META": 26,
@@ -164,8 +164,6 @@ pe_high_dict = {
 }
 
 # Apply values from dictionaries
-
-
 df["Growth Class"] = df["Ticker"].map(growth_class_dict)
 df["Type"] = df["Ticker"].map(type_dict)
 df["PE low"] = df["Ticker"].map(pe_low_dict)
@@ -173,7 +171,6 @@ df["PE high"] = df["Ticker"].map(pe_high_dict)
 
 # (Optional) Fill missing PE ranges with blanks instead of NaN
 df.fillna({"PE low": "", "PE high": ""}, inplace=True)
-
 
 # List of ETF tickers
 etf_list = ["VOO", 
@@ -190,7 +187,7 @@ df.loc[df["Ticker"].isin(etf_list), "Sector"] = "Index"
 # Calculate Percentage of each holding in the portfolio
 df["Percentage"] = (df["Market value"] / df["Market value"].sum())
 
-# Import EPS CAGR for 3 years
+# Function to calculate 3 year EPS CAGR
 def calculate_eps_cagr_3y(ticker):
     """
     Fetches EPS data for a ticker and calculates 3-year EPS CAGR.
@@ -199,7 +196,7 @@ def calculate_eps_cagr_3y(ticker):
     try:
         stock = yf.Ticker(ticker)
 
-        # Get yearly EPS (most reliable source)
+        # 1. Get yearly EPS (most reliable source)
         eps_df = stock.income_stmt
 
         if eps_df is None or "Diluted EPS" not in eps_df.index:
@@ -207,7 +204,7 @@ def calculate_eps_cagr_3y(ticker):
 
         eps_series = eps_df.loc["Diluted EPS"].dropna()
 
-        # Ensure newest -> oldest
+        # 2. Ensure newest -> oldest
         eps_series = eps_series.sort_index(ascending=False)
 
         if len(eps_series) < 4 or eps_series.iloc[3] <= 0:
@@ -218,9 +215,10 @@ def calculate_eps_cagr_3y(ticker):
     except Exception:
         return None
 
+# Apply calculate_eps_cagr_3y and add values to the dataframe
 df["eps_CAGR_3y"] = df["Ticker"].apply(calculate_eps_cagr_3y)
 
-
+# Function to calculate 3 year FCF CAGR
 def calculate_fcf_cagr_3y(ticker):
     """
     Calculates 3-year Free Cash Flow CAGR using Yahoo Finance data.
@@ -233,7 +231,7 @@ def calculate_fcf_cagr_3y(ticker):
         if cashflow_df is None or cashflow_df.empty:
             return None
 
-        # Possible label variations
+        # 1. Possible label variations
         ocf_labels = [
             "Operating Cash Flow",
             "Net Cash Provided by Operating Activities",
@@ -247,20 +245,20 @@ def calculate_fcf_cagr_3y(ticker):
             "Purchase of PPE"
         ]
 
-        # Find matching labels
+        # 2. Find matching labels
         ocf_label = next((l for l in ocf_labels if l in cashflow_df.index), None)
         capex_label = next((l for l in capex_labels if l in cashflow_df.index), None)
 
         if ocf_label is None or capex_label is None:
             return None
 
-        # Calculate Free Cash Flow
+        # 3. Calculate Free Cash Flow
         fcf_series = (
             cashflow_df.loc[ocf_label]
             + cashflow_df.loc[capex_label]  # CapEx is negative
         ).dropna()
 
-        # Ensure newest → oldest
+        # 4. Ensure newest → oldest
         fcf_series = fcf_series.sort_index(ascending=False)
 
         if len(fcf_series) < 4 or fcf_series.iloc[3] <= 0:
@@ -271,11 +269,47 @@ def calculate_fcf_cagr_3y(ticker):
     except Exception:
         return None
 
-
+# Apply calculate_fcf_cagr_3y and add values to the dataframe
 df["fcf_CAGR_3y"] = df["Ticker"].apply(calculate_fcf_cagr_3y)
 
-# 6. Save to Excel
+# Calculate buy score
+def calculate_buy_scores(df):
+    """
+    Input: DataFrame with columns 'Ticker', 'Percentage', 'eps_CAGR_3y', 'fcf_CAGR_3y'
+    Output: DataFrame with 'Buy_Score'
+    """
+    TARGET_WEIGHT = 0.05  # 5% target
+    df = df.copy()
 
-df.to_excel("stock_fundamentals.xlsx", index=False)
+    # 1. Calculate Core Metrics
+    # Average of EPS and FCF growth
+    df['growth_avg'] = (df['eps_CAGR_3y'] + df['fcf_CAGR_3y']) / 2
+    
+    # Gap between current weight and 5% (capped at 0 if already over)
+    df['weight_gap'] = (TARGET_WEIGHT - df['Percentage']).clip(lower=0)
+
+    # 2. Normalize Components (Scale 0 to 1)
+    # This prevents growth % from drowning out the portfolio gap %
+    def normalize(col):
+        if col.max() == col.min(): return 1.0
+        return (col - col.min()) / (col.max() - col.min())
+
+    df['norm_growth'] = normalize(df['growth_avg'])
+    df['norm_gap'] = normalize(df['weight_gap'])
+
+    # 3. Final Buy Score (50% Growth weighting, 50% Portfolio gap weighting)
+    df['Buy_Score'] = (df['norm_growth'] * 0.5) + (df['norm_gap'] * 0.5)
+
+    # 4. Drop intermediate calculated columns
+    df = df.drop(columns = ['growth_avg', 'weight_gap', 'norm_growth', 'norm_gap'])
+    
+    # Return sorted by highest Buy_Score
+    return df
+
+# Calculate buy score
+df_final = calculate_buy_scores(df)
+
+# Save to Excel
+df_final.to_excel("stock_fundamentals.xlsx", index=False)
 
 print("Saved to stock_fundamentals.xlsx")
